@@ -7,22 +7,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/csmith/envflag/v2"
+	"github.com/csmith/slogflags"
 	"github.com/greboid/irc-bot/v5/plugins"
 	"github.com/greboid/irc-bot/v5/rpc"
 )
 
 var (
-	rpcHost        = flag.String("rpc-host", "localhost", "gRPC server to connect to")
-	rpcPort        = flag.Int("rpc-port", 8001, "gRPC server port")
-	rpcToken       = flag.String("rpc-token", "", "gRPC authentication token")
-	channel        = flag.String("channel", "", "Channel to send messages to")
-	webhookSecret  = flag.String("webhook-secret", "", "Secret for verifying webhook signatures")
-	messagePrefix  = flag.String("message-prefix", "", "Prefix to add to the start of each message")
+	rpcHost       = flag.String("rpc-host", "localhost", "gRPC server to connect to")
+	rpcPort       = flag.Int("rpc-port", 8001, "gRPC server port")
+	rpcToken      = flag.String("rpc-token", "", "gRPC authentication token")
+	channel       = flag.String("channel", "", "Channel to send messages to")
+	webhookSecret = flag.String("webhook-secret", "", "Secret for verifying webhook signatures")
+	messagePrefix = flag.String("message-prefix", "", "Prefix to add to the start of each message")
 )
 
 type notification struct {
@@ -34,15 +35,20 @@ type notification struct {
 
 func main() {
 	envflag.Parse()
+	_ = slogflags.Logger(slogflags.WithSetDefault(true))
 
 	helper, err := plugins.NewHelper(fmt.Sprintf("%s:%d", *rpcHost, uint16(*rpcPort)), *rpcToken)
 	if err != nil {
-		log.Fatalf("Unable to create plugin helper: %v", err)
+		slog.Error("Unable to create plugin helper", "error", err)
+		return
 	}
 
 	if err := helper.RegisterWebhook("adze", webhookHandler(helper)); err != nil {
-		log.Fatalf("Error registering webhook: %v", err)
+		slog.Error("Error registering webhook", "error", err)
+		return
 	}
+
+	slog.Info("Plugin started", "channel", *channel, "webhook", "adze")
 }
 
 func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest) *rpc.HttpResponse {
@@ -53,13 +59,15 @@ func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest)
 
 		n := notification{}
 		if err := json.Unmarshal(request.Body, &n); err != nil {
-			log.Printf("Failed to unmarshal webhook body: %v", err)
+			slog.Error("Failed to unmarshal webhook body", "error", err)
 			return &rpc.HttpResponse{Status: http.StatusBadRequest}
 		}
 
+		slog.Info("Received webhook", "target", n.Target, "status", n.Status, "image", n.Image)
+
 		msg := formatMessage(n)
 		if err := helper.SendChannelMessage(*channel, msg); err != nil {
-			log.Printf("Failed to send channel message: %v", err)
+			slog.Error("Failed to send channel message", "error", err)
 		}
 
 		return &rpc.HttpResponse{Status: http.StatusNoContent}
