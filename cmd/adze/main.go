@@ -43,12 +43,12 @@ func main() {
 		return
 	}
 
+	slog.Info("Plugin started", "channel", *channel, "webhook", "adze")
+
 	if err := helper.RegisterWebhook("adze", webhookHandler(helper)); err != nil {
 		slog.Error("Error registering webhook", "error", err)
 		return
 	}
-
-	slog.Info("Plugin started", "channel", *channel, "webhook", "adze")
 }
 
 func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest) *rpc.HttpResponse {
