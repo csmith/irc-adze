@@ -24,6 +24,7 @@ var (
 	channel       = flag.String("channel", "", "Channel to send messages to")
 	webhookSecret = flag.String("webhook-secret", "", "Secret for verifying webhook signatures")
 	messagePrefix = flag.String("message-prefix", "", "Prefix to add to the start of each message")
+	useDir        = flag.Bool("use-dir", false, "Use the directory field instead of the target name in messages")
 )
 
 type notification struct {
@@ -31,6 +32,7 @@ type notification struct {
 	Target string `json:"target"`
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 func main() {
@@ -106,7 +108,12 @@ func formatMessage(n notification) string {
 		msg.WriteString(" ")
 	}
 
-	msg.WriteString(n.Target)
+	name := n.Target
+	if *useDir && n.Dir != "" {
+		name = n.Dir
+	}
+
+	msg.WriteString(name)
 	msg.WriteString(": ")
 	msg.WriteString(n.Status)
 	msg.WriteString(" updating ")

@@ -14,6 +14,7 @@ Receives notification webhooks from [Adze](https://github.com/greboid/adze) and 
 | `-channel` | `CHANNEL` | | Channel to send messages to |
 | `-webhook-secret` | `WEBHOOK_SECRET` | | Secret for verifying webhook signatures |
 | `-message-prefix` | `MESSAGE_PREFIX` | | Optional prefix to add to the start of each message |
+| `-use-dir` | `USE_DIR` | `false` | Use the directory name instead of the project name in messages |
 
 Once configured, set the webhook URL in Adze to `<Bot URL>/adze`, for example:
 
