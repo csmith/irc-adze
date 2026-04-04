@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/csmith/envflag/v2"
@@ -110,7 +111,7 @@ func formatMessage(n notification) string {
 
 	name := n.Target
 	if *useDir && n.Dir != "" {
-		name = n.Dir
+		name = filepath.Base(n.Dir)
 	}
 
 	msg.WriteString(name)
