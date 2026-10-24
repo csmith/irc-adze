@@ -61,7 +61,7 @@ func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest)
 		}
 
 		n := notification{}
-		if err := json.Unmarshal(request.Body, &n); err != nil {
+		if err := json.Unmarshal(request.GetBody(), &n); err != nil {
 			slog.Error("Failed to unmarshal webhook body", "error", err)
 			return &rpc.HttpResponse{Status: http.StatusBadRequest}
 		}
@@ -79,9 +79,9 @@ func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest)
 
 func verifySignature(request *rpc.HttpRequest) bool {
 	var sigHeader string
-	for i := range request.Header {
-		if request.Header[i].Key == "X-Adze-Signature" {
-			sigHeader = request.Header[i].Value
+	for _, h := range request.GetHeader() {
+		if h.GetKey() == "X-Adze-Signature" {
+			sigHeader = h.GetValue()
 			break
 		}
 	}
@@ -95,7 +95,7 @@ func verifySignature(request *rpc.HttpRequest) bool {
 	}
 
 	mac := hmac.New(sha256.New, []byte(*webhookSecret))
-	mac.Write(request.Body)
+	mac.Write(request.GetBody())
 	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 
 	return hmac.Equal([]byte(sigHeader), []byte(expected))
