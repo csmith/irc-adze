@@ -1,8 +1,8 @@
-FROM golang:1.27.3 as builder
+FROM golang:1.27.4 AS builder
 
 WORKDIR /app
 COPY . /app
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -trimpath -ldflags=-buildid= -o main ./cmd/irc-adze
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static" -buildid=' -trimpath -o main ./cmd/adze
 
 FROM ghcr.io/greboid/dockerbase/nonroot:1.20261022.0
 
