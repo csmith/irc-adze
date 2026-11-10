@@ -15,6 +15,8 @@ Receives notification webhooks from [Adze](https://github.com/greboid/adze) and 
 | `-webhook-secret` | `WEBHOOK_SECRET` | | Secret for verifying webhook signatures |
 | `-message-prefix` | `MESSAGE_PREFIX` | | Optional prefix to add to the start of each message |
 | `-use-dir` | `USE_DIR` | `false` | Use the directory name instead of the project name in messages |
+| `-hide-private` | `HIDE_PRIVATE` | `false` | Hide notifications about private images, including any Adze doesn't report as public |
+| `-private-channel` | `PRIVATE_CHANNEL` | | Channel to send notifications about private images to, instead of `-channel` |
 
 Once configured, set the webhook URL in Adze to `<Bot URL>/adze`, for example:
 

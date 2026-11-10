@@ -26,14 +26,38 @@ var (
 	webhookSecret = flag.String("webhook-secret", "", "Secret for verifying webhook signatures")
 	messagePrefix = flag.String("message-prefix", "", "Prefix to add to the start of each message")
 	useDir        = flag.Bool("use-dir", false, "Use the directory field instead of the target name in messages")
+
+	privateChannel = flag.String("private-channel", "", "Channel to send messages about private images to")
+	hidePrivate    = flag.Bool("hide-private", false, "Hide notifications about private images")
 )
 
 type notification struct {
-	Image  string `json:"image"`
-	Target string `json:"target"`
-	Status string `json:"status"`
-	Error  string `json:"error,omitempty"`
-	Dir    string `json:"dir,omitempty"`
+	Image   string `json:"image"`
+	Target  string `json:"target"`
+	Status  string `json:"status"`
+	Error   string `json:"error,omitempty"`
+	Dir     string `json:"dir,omitempty"`
+	Owner   string `json:"owner,omitempty"`
+	Private *bool  `json:"private,omitempty"`
+}
+
+// isPrivate treats a missing field as private, as older Adze versions don't send it.
+func (n notification) isPrivate() bool {
+	return n.Private == nil || *n.Private
+}
+
+// targetChannel returns the channel to announce n in, or false if it is hidden.
+func targetChannel(n notification) (string, bool) {
+	if !n.isPrivate() {
+		return *channel, true
+	}
+	if *hidePrivate {
+		return "", false
+	}
+	if *privateChannel != "" {
+		return *privateChannel, true
+	}
+	return *channel, true
 }
 
 func main() {
@@ -66,10 +90,15 @@ func webhookHandler(helper *plugins.PluginHelper) func(request *rpc.HttpRequest)
 			return &rpc.HttpResponse{Status: http.StatusBadRequest}
 		}
 
-		slog.Info("Received webhook", "target", n.Target, "status", n.Status, "image", n.Image)
+		slog.Info("Received webhook", "target", n.Target, "status", n.Status, "image", n.Image, "owner", n.Owner, "private", n.isPrivate())
+
+		target, ok := targetChannel(n)
+		if !ok {
+			return &rpc.HttpResponse{Status: http.StatusNoContent}
+		}
 
 		msg := formatMessage(n)
-		if err := helper.SendChannelMessage(*channel, msg); err != nil {
+		if err := helper.SendChannelMessage(target, msg); err != nil {
 			slog.Error("Failed to send channel message", "error", err)
 		}
 
