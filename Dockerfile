@@ -1,15 +1,10 @@
-FROM golang:1.27.4 AS build
+FROM golang:1.27.3 as builder
 
-WORKDIR /go/src/app
-COPY . .
+WORKDIR /app
+COPY . /app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -trimpath -ldflags=-buildid= -o main ./cmd/irc-adze
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    set -eux; \
-    CGO_ENABLED=0 GO111MODULE=on go install ./cmd/adze; \
-    go run github.com/google/go-licenses@latest save ./... --save_path=/notices;
+FROM ghcr.io/greboid/dockerbase/nonroot:1.20261022.0
 
-FROM ghcr.io/greboid/dockerbase/nonroot:1.20261007.0
-
-COPY --from=build /go/bin/adze /irc-adze
-COPY --from=build /notices /notices
+COPY --from=builder /app/main /irc-adze
 CMD ["/irc-adze"]
